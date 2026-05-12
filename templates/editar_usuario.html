@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0">✏️ Editar Usuario: {{ usuario.username }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nombre de Usuario</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               value="{{ usuario.username }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               value="{{ usuario.email }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Rol</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="vendedor" {{ 'selected' if usuario.role == 'vendedor' else '' }}>
+                                📝 Vendedor
+                            </option>
+                            <option value="bodega" {{ 'selected' if usuario.role == 'bodega' else '' }}>
+                                📦 Bodega
+                            </option>
+                            <option value="admin" {{ 'selected' if usuario.role == 'admin' else '' }}>
+                                👑 Administrador
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Nueva Contraseña (opcional)</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Dejar en blanco para no cambiar">
+                        <small class="text-muted">Mínimo 6 caracteres si la cambias</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning">Guardar Cambios</button>
+                        <a href="{{ url_for('listar_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Panel de Control</h2>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger">Cerrar Sesión</a>
+</div>
+
+<div class="alert alert-info">
+    <strong>Bienvenido, {{ user.username }}!</strong><br>
+    Tu rol es: <span class="badge bg-primary">{{ user.role }}</span>
+</div>
+
+<!-- Contenido según el rol del usuario -->
+{% if user.role == 'admin' %}
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h1 class="display-4">👥</h1>
+                    <h5>Gestión de Usuarios</h5>
+                    <p>Crear, editar y eliminar usuarios del sistema</p>
+                    <a href="{{ url_for('listar_usuarios') }}" class="btn btn-primary">
+                        Ir a Usuarios
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h1 class="display-4">📚</h1>
+                    <h5>Gestión de Libros</h5>
+                    <p>Agregar, editar y eliminar libros del inventario</p>
+                    <a href="#" class="btn btn-primary">Próximamente</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h1 class="display-4">📊</h1>
+                    <h5>Reportes</h5>
+                    <p>Ver estadísticas y reportes del negocio</p>
+                    <a href="#" class="btn btn-primary">Próximamente</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% elif user.role == 'vendedor' %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h1 class="display-4">🛒</h1>
+                    <h5>Nueva Venta</h5>
+                    <p>Registrar ventas y gestionar clientes</p>
+                    <a href="#" class="btn btn-success">Iniciar Venta</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h1 class="display-4">🔍</h1>
+                    <h5>Consultar Libros</h5>
+                    <p>Buscar libros y ver disponibilidad</p>
+                    <a href="#" class="btn btn-info">Buscar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% elif user.role == 'bodega' %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h1 class="display-4">📦</h1>
+                    <h5>Control de Stock</h5>
+                    <p>Ver y actualizar niveles de inventario</p>
+                    <a href="#" class="btn btn-warning">Ver Stock</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h1 class="display-4">⚠️</h1>
+                    <h5>Alertas de Stock Mínimo</h5>
+                    <p>Libros por debajo del nivel mínimo</p>
+                    <a href="#" class="btn btn-danger">Ver Alertas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
