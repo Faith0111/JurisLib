@@ -53,7 +53,6 @@
                     <tr>
                         <th>ID</th>
                         <th>Usuario</th>
-                        <th>Email</th>
                         <th>Rol</th>
                         <th>Acciones</th>
                     </tr>
@@ -68,7 +67,6 @@
                                 <span class="badge bg-info ms-2">Tú</span>
                             {% endif %}
                         </td>
-                        <td>{{ usuario.email }}</td>
                         <td>
                             {% if usuario.role == 'admin' %}
                                 <span class="badge bg-warning text-dark">👑 Admin</span>

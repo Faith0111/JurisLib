@@ -30,9 +30,9 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        # Buscar usuario por username o email
+        # Buscar usuario por username
         user = User.query.filter(
-            (User.username == username) | (User.email == username)
+            (User.username == username)
         ).first()
 
         if user and user.check_password(password):
@@ -80,7 +80,6 @@ def crear_admin():
     if not admin:
         admin = User(
             username='admin',
-            email='admin@jurislib.com',
             role='admin'
         )
         admin.set_password('admin123')
@@ -169,7 +168,6 @@ def crear_usuario():
     if request.method == 'POST':
         # Obtener datos del formulario
         username = request.form.get('username', '').strip()
-        email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
         role = request.form.get('role', 'vendedor')
@@ -183,11 +181,6 @@ def crear_usuario():
         elif len(username) < 3:
             errores.append('El nombre de usuario debe tener al menos 3 caracteres')
 
-        if not email:
-            errores.append('El email es obligatorio')
-        elif '@' not in email:
-            errores.append('Email inválido (debe contener @)')
-
         if not password:
             errores.append('La contraseña es obligatoria')
         elif len(password) < 6:
@@ -196,16 +189,14 @@ def crear_usuario():
         if password != confirm_password:
             errores.append('Las contraseñas no coinciden')
 
-        # 2. Verificar que no existan usuarios con mismo username o email
+        # 2. Verificar que no existan usuarios con mismo username
         usuario_existe = User.query.filter(
-            (User.username == username) | (User.email == email)
+            (User.username == username)
         ).first()
 
         if usuario_existe:
             if usuario_existe.username == username:
                 errores.append(f'El usuario "{username}" ya existe')
-            if usuario_existe.email == email:
-                errores.append(f'El email "{email}" ya está registrado')
 
         # 3. Verificar que el rol sea válido
         roles_validos = ['admin', 'vendedor', 'bodega']
@@ -222,7 +213,6 @@ def crear_usuario():
         try:
             nuevo_usuario = User(
                 username=username,
-                email=email,
                 role=role
             )
             nuevo_usuario.set_password(password)
@@ -258,7 +248,6 @@ def editar_usuario(user_id):
     if request.method == 'POST':
         # Actualizar campos
         nuevo_username = request.form.get('username', '').strip()
-        nuevo_email = request.form.get('email', '').strip()
         nuevo_role = request.form.get('role', 'vendedor')
 
         # Validaciones básicas
@@ -266,22 +255,17 @@ def editar_usuario(user_id):
             flash('El nombre de usuario debe tener al menos 3 caracteres', 'danger')
             return render_template('editar_usuario.html', usuario=usuario)
 
-        if not nuevo_email or '@' not in nuevo_email:
-            flash('Email inválido', 'danger')
-            return render_template('editar_usuario.html', usuario=usuario)
-
         # Verificar que no haya conflicto con otros usuarios
         conflicto = User.query.filter(
-            ((User.username == nuevo_username) | (User.email == nuevo_email)) &
+            (User.username == nuevo_username) &
             (User.id != user_id)
         ).first()
 
         if conflicto:
-            flash('Ya existe otro usuario con ese nombre de usuario o email', 'danger')
+            flash('Ya existe otro usuario con ese nombre de usuario', 'danger')
             return render_template('editar_usuario.html', usuario=usuario)
 
         usuario.username = nuevo_username
-        usuario.email = nuevo_email
         usuario.role = nuevo_role
 
         # Si se proporcionó nueva contraseña, actualizarla
