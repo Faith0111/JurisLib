@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">➕ Agregar Nuevo Libro</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Libro *</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="precio" class="form-label">Precio *</label>
+                        <input type="text" class="form-control" id="precio" name="precio" required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="autor" class="form-label">Autor *</label>
+                        <input type="text" class="form-control" id="autor" name="autor" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="existencias" class="form-label">Existencias Iniciales</label>
+                        <input type="number" class="form-control" id="existencias" name="existencias" value="0" min="0">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Crear Libro</button>
+                        <a href="{{ url_for('listar_libros') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

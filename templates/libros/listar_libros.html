@@ -1,0 +1,104 @@
+Modulo de manipulacion de la base de datos desde usuarios admin y bodegueros (CRUD) añadido{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📚 Gestión de Libros</h2>
+    <div>
+        <a href="{{ url_for('crear_libro') }}" class="btn btn-primary">
+            ➕ Nuevo Libro
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+            Volver
+        </a>
+    </div>
+</div>
+
+<!-- Tarjetas de estadísticas -->
+<div class="row mb-4 justify-content-center">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white stats-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Libros</h5>
+                <h2>{{ total_libros }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white stats-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Ejemplares</h5>
+                <h2>{{ total_ejemplares }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark stats-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Libros Agotados</h5>
+                <h2>{{ libros_agotados }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de libros -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                        <th>Autor</th>
+                        <th>Existencias</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for libro in libros %}
+                    <tr>
+                        <td>{{ libro.id }}</td>
+                        <td>{{ libro.nombre }}</td>
+                        <td>{{ libro.precio }}</td>
+                        <td>{{ libro.autor }}</td>
+                        <td>
+                            <span class="badge {% if libro.existencias == 0 %}bg-danger{% elif libro.existencias < 5 %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ libro.existencias }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if libro.existencias == 0 %}
+                                <span class="badge bg-danger">Agotado</span>
+                            {% elif libro.existencias < 5 %}
+                                <span class="badge bg-warning">Stock Bajo</span>
+                            {% else %}
+                                <span class="badge bg-success">Disponible</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <!-- Acciones rápidas de stock -->
+
+                            <form action="{{ url_for('actualizar_stock') }}" method="POST" class="d-inline">
+                                <input type="hidden" name="libro_id" value="{{ libro.id }}">
+                                <input type="hidden" name="operacion" value="sumar">
+                                <input type="number" name="cantidad" value="1" min="1" style="width: 60px;" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success">➕ Agregar</button>
+                            </form>
+
+                            <a href="{{ url_for('editar_libro', libro_id=libro.id) }}" class="btn btn-sm btn-warning">✏️</a>
+
+                            {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('eliminar_libro', libro_id=libro.id) }}" class="btn btn-sm btn-danger">🗑️</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

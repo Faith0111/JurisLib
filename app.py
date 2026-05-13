@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, User
+from models import db, User, Libro
 from config import Config
 from functools import wraps
+from decimal import Decimal
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -317,7 +318,241 @@ def eliminar_usuario(user_id):
 
     return redirect(url_for('listar_usuarios'))
 
+
+# ============================================
+# GESTIÓN DE LIBROS (Admin y Bodega)
+# ============================================
+
+@app.route('/libros')
+@login_required
+def listar_libros():
+    """Muestra todos los libros (admin y bodega pueden ver)"""
+    # Verificar rol
+    if current_user.role not in ['admin', 'bodega']:
+        flash('Acceso denegado. Solo administradores y personal de bodega pueden ver los libros.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    # Obtener todos los libros ordenados por nombre
+    libros = Libro.query.order_by(Libro.nombre).all()
+
+    # Estadísticas
+    total_libros = len(libros)
+    total_ejemplares = sum(libro.existencias for libro in libros)
+    libros_agotados = sum(1 for libro in libros if libro.existencias == 0)
+
+    return render_template('libros/listar_libros.html',
+                           libros=libros,
+                           total_libros=total_libros,
+                           total_ejemplares=total_ejemplares,
+                           libros_agotados=libros_agotados)
+
+@app.route('/libros/crear', methods=['GET', 'POST'])
+@login_required
+def crear_libro():
+    """Crear un nuevo libro (admin y bodega pueden crear)"""
+    if current_user.role not in ['admin', 'bodega']:
+        flash('Acceso denegado. Solo administradores y personal de bodega pueden crear libros.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        nombre = request.form.get('nombre', '').strip()
+        precio = request.form.get('precio', '').strip()
+        autor = request.form.get('autor', '').strip()
+        existencias = request.form.get('existencias', 0)
+
+        # ============================================
+        # VALIDACIÓN DE PRECIO (con dos decimales)
+        # ============================================
+        errores = []
+
+        # Validar precio
+        if not precio:
+            errores.append('El precio es obligatorio')
+        else:
+            try:
+                # Convertir a float
+                precio = float(precio)
+
+                # Validar que sea positivo
+                if precio < 0:
+                    errores.append('El precio no puede ser negativo')
+
+                # Validar que solo tenga 2 decimales usando Decimal
+                from decimal import Decimal, InvalidOperation
+                precio_decimal = Decimal(precio)
+
+                # Verificar que no tenga más de 2 decimales
+                if precio_decimal.as_tuple().exponent < -2:
+                    errores.append('El precio solo puede tener hasta 2 decimales (ejemplo: 19.99)')
+
+            except (ValueError, InvalidOperation):
+                errores.append('El precio debe ser un número válido (ejemplo: 19.99)')
+
+        if not nombre:
+            errores.append('El nombre del libro es obligatorio')
+        elif len(nombre) < 3:
+            errores.append('El nombre debe tener al menos 3 caracteres')
+
+        if not precio:
+            errores.append('El precio es obligatorio')
+
+        if not autor:
+            errores.append('El autor es obligatorio')
+
+        try:
+            existencias = int(existencias)
+            if existencias < 0:
+                errores.append('Las existencias no pueden ser negativas')
+        except ValueError:
+            errores.append('Las existencias deben ser un número válido')
+
+        # Verificar si ya existe un libro con el mismo nombre y autor
+        libro_existe = Libro.query.filter_by(nombre=nombre, autor=autor).first()
+        if libro_existe:
+            errores.append(f'Ya existe un libro con el nombre "{nombre}" del autor "{autor}"')
+
+        if errores:
+            for error in errores:
+                flash(error, 'danger')
+            return render_template('libros/crear_libro.html')
+
+        try:
+            nuevo_libro = Libro(
+                nombre=nombre,
+                precio=precio,
+                autor=autor,
+                existencias=existencias,
+                creado_por_id=current_user.id,
+                editado_por_id=current_user.id
+            )
+            db.session.add(nuevo_libro)
+            db.session.commit()
+            flash(f'✅ Libro "{nombre}" creado exitosamente', 'success')
+            return redirect(url_for('listar_libros'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear libro: {str(e)}', 'danger')
+
+    return render_template('libros/crear_libro.html')
+
+
+@app.route('/libros/editar/<int:libro_id>', methods=['GET', 'POST'])
+@login_required
+def editar_libro(libro_id):
+    """Editar un libro (admin y bodega pueden editar existencias)"""
+    if current_user.role not in ['admin', 'bodega']:
+        flash('Acceso denegado. Solo administradores y personal de bodega pueden editar libros.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    libro = Libro.query.get_or_404(libro_id)
+
+    if request.method == 'POST':
+        # Solo admin puede cambiar nombre, autor
+        if current_user.role == 'admin':
+            libro.nombre = request.form.get('nombre', '').strip()
+            libro.autor = request.form.get('autor', '').strip()
+
+        # Ambos pueden cambiar existencias
+        try:
+            nuevas_existencias = int(request.form.get('existencias', 0))
+            if nuevas_existencias < 0:
+                flash('Las existencias no pueden ser negativas', 'danger')
+                return render_template('libros/editar_libro.html', libro=libro)
+            libro.existencias = nuevas_existencias
+        except ValueError:
+            flash('Las existencias deben ser un número válido', 'danger')
+            return render_template('libros/editar_libro.html', libro=libro)
+
+        libro.editado_por_id = current_user.id
+
+        try:
+            db.session.commit()
+            flash(f'✅ Libro "{libro.nombre}" actualizado correctamente', 'success')
+            return redirect(url_for('listar_libros'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar libro: {str(e)}', 'danger')
+
+    return render_template('libros/editar_libro.html', libro=libro)
+
+
+@app.route('/libros/eliminar/<int:libro_id>', methods=['GET', 'POST'])
+@login_required
+def eliminar_libro(libro_id):
+    """Eliminar un libro (SOLO ADMIN, con confirmación de contraseña)"""
+    if current_user.role != 'admin':
+        flash('Acceso denegado. Solo los administradores pueden eliminar libros.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    libro = Libro.query.get_or_404(libro_id)
+
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+
+        # Verificar contraseña del admin
+        if not current_user.check_password(password):
+            flash('❌ Contraseña incorrecta. No se eliminó el libro.', 'danger')
+            return render_template('libros/eliminar_libro.html', libro=libro)
+
+        nombre_libro = libro.nombre
+
+        try:
+            db.session.delete(libro)
+            db.session.commit()
+            flash(f'✅ Libro "{nombre_libro}" eliminado permanentemente', 'success')
+            return redirect(url_for('listar_libros'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al eliminar libro: {str(e)}', 'danger')
+
+    return render_template('libros/eliminar_libro.html', libro=libro)
+
+
+@app.route('/libros/actualizar-stock', methods=['POST'])
+@login_required
+def actualizar_stock():
+    """Actualización rápida de stock (para bodega y admin)"""
+    if current_user.role not in ['admin', 'bodega']:
+        flash('Acceso denegado', 'danger')
+        return redirect(url_for('dashboard'))
+
+    libro_id = request.form.get('libro_id')
+    operacion = request.form.get('operacion')  # 'sumar' o 'restar'
+    cantidad = request.form.get('cantidad', 1)
+
+    libro = Libro.query.get_or_404(libro_id)
+
+    try:
+        cantidad = int(cantidad)
+        if cantidad <= 0:
+            flash('La cantidad debe ser mayor a 0', 'danger')
+            return redirect(url_for('listar_libros'))
+
+        if operacion == 'sumar':
+            libro.existencias += cantidad
+            flash(f'✅ Se agregaron {cantidad} ejemplares de "{libro.nombre}"', 'success')
+        elif operacion == 'restar':
+            if libro.existencias - cantidad < 0:
+                flash(f'❌ No hay suficientes existencias. Stock actual: {libro.existencias}', 'danger')
+                return redirect(url_for('listar_libros'))
+            libro.existencias -= cantidad
+            flash(f'✅ Se retiraron {cantidad} ejemplares de "{libro.nombre}"', 'success')
+        else:
+            flash('Operación no válida', 'danger')
+            return redirect(url_for('listar_libros'))
+
+        libro.editado_por_id = current_user.id
+        db.session.commit()
+
+    except ValueError:
+        flash('Cantidad no válida', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'danger')
+
+    return redirect(url_for('listar_libros'))
+
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Crea las tablas si no existen
+        db.create_all()
     app.run(debug=True)

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0">✏️ Editar Libro: {{ libro.nombre }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Libro</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre"
+                               value="{{ libro.nombre }}" required
+                               {% if current_user.role != 'admin' %}readonly{% endif %}>
+                        {% if current_user.role != 'admin' %}
+                        <small class="text-muted">Solo administradores pueden editar el nombre</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="precio" class="form-label">Precio</label>
+                        <input type="text" class="form-control" id="precio" name="precio"
+                               value="{{ libro.precio }}" required
+                               {% if current_user.role != 'admin' %}readonly{% endif %}>
+                        {% if current_user.role != 'admin' %}
+                        <small class="text-muted">Solo administradores pueden editar el precio</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="autor" class="form-label">Autor</label>
+                        <input type="text" class="form-control" id="autor" name="autor"
+                               value="{{ libro.autor }}" required
+                               {% if current_user.role != 'admin' %}readonly{% endif %}>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="existencias" class="form-label">Existencias</label>
+                        <input type="number" class="form-control" id="existencias" name="existencias"
+                               value="{{ libro.existencias }}" min="0" required>
+                        <small class="text-muted">Puedes actualizar el stock aquí</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning">Guardar Cambios</button>
+                        <a href="{{ url_for('listar_libros') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
