@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 Datos del Cliente</h2>
+    <a href="{{ url_for('panel_ventas') }}" class="btn btn-secondary">← Volver al Panel</a>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><strong>Resumen de la Venta</strong></div>
+            <div class="card-body p-0">
+                <table class="table table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Libro</th>
+                            <th class="text-center">Cant.</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                {{ item.nombre }}<br>
+                                <small class="text-muted">${{ "%.2f"|format(item.precio) }} c/u</small>
+                            </td>
+                            <td class="text-center">{{ item.cantidad }}</td>
+                            <td class="text-end">${{ "%.2f"|format(item.precio * item.cantidad) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                            <td class="text-end"><strong>${{ "%.2f"|format(total) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Información del Cliente</strong></div>
+            <div class="card-body">
+                <form action="{{ url_for('finalizar_venta') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="nombre_cliente" class="form-label">
+                            Nombre del Cliente <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="nombre_cliente"
+                               name="nombre_cliente" required placeholder="Nombre completo"
+                               value="{{ nombre_cliente or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefono_cliente" class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="telefono_cliente"
+                               name="telefono_cliente" placeholder="Opcional"
+                               value="{{ telefono_cliente or '' }}">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg"
+                                onclick="return confirm('¿Confirmar la venta?')">
+                            ✅ Finalizar Venta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

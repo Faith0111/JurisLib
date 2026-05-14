@@ -47,6 +47,45 @@
             </div>
         </div>
     </div>
+     <div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card module-card shadow-sm">
+            <div class="card-body">
+                <div class="display-1">🛒</div>
+                <h5>Punto de Venta</h5>
+                <p>Registrar ventas y gestionar carrito de compras</p>
+                <a href="{{ url_for('panel_ventas') }}" class="btn btn-success">
+                    Ir a Ventas
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif user.role == 'vendedor' %}
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card module-card shadow-sm">
+                <div class="card-body">
+                    <div class="display-1">🛒</div>
+                    <h5>Nueva Venta</h5>
+                    <p>Registrar ventas y gestionar clientes</p>
+                    <a href="{{ url_for('panel_ventas') }}" class="btn btn-success">Iniciar Venta</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card module-card shadow-sm">
+                <div class="card-body">
+                    <div class="display-1">🔍</div>
+                    <h5>Consultar Libros</h5>
+                    <p>Buscar libros y ver disponibilidad</p>
+                    <a href="#" class="btn btn-info">Buscar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% elif user.role == 'bodega' %}
     <div class="row">

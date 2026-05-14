@@ -552,6 +552,105 @@ def actualizar_stock():
 
     return redirect(url_for('listar_libros'))
 
+# ============================================
+# MÓDULO DE VENTAS
+# ============================================
+
+@app.route('/ventas')
+@login_required
+def panel_ventas():
+    """Panel principal de ventas (vendedores y admin)"""
+    if current_user.role not in ['admin', 'vendedor']:
+        flash('Acceso denegado. Solo administradores y vendedores pueden acceder al módulo de ventas.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    # Obtener libros disponibles (con existencias > 0)
+    libros_disponibles = Libro.query.filter(Libro.existencias > 0).order_by(Libro.nombre).all()
+
+    return render_template('ventas/panel_ventas.html', libros=libros_disponibles)
+
+
+@app.route('/ventas/datos-cliente', methods=['POST'])
+@login_required
+def datos_cliente():
+    """Recibe los libros seleccionados y muestra el formulario de datos del cliente"""
+    if current_user.role not in ['admin', 'vendedor']:
+        flash('Acceso denegado', 'danger')
+        return redirect(url_for('dashboard'))
+
+    libro_ids = request.form.getlist('libro_id')
+
+    if not libro_ids:
+        flash('⚠️ Selecciona al menos un libro para continuar.', 'warning')
+        return redirect(url_for('panel_ventas'))
+
+    items = []
+    for libro_id in libro_ids:
+        cantidad = int(request.form.get(f'cantidad_{libro_id}', 1))
+        libro = Libro.query.get(libro_id)
+        if libro and 0 < cantidad <= libro.existencias:
+            items.append({
+                'id': libro.id,
+                'nombre': libro.nombre,
+                'precio': float(libro.precio),
+                'cantidad': cantidad
+            })
+
+    if not items:
+        flash('⚠️ No se pudieron agregar los libros seleccionados.', 'warning')
+        return redirect(url_for('panel_ventas'))
+
+    session['venta_items'] = items
+    session.modified = True
+
+    total = sum(item['precio'] * item['cantidad'] for item in items)
+    return render_template('ventas/datos_cliente.html', items=items, total=total)
+
+
+@app.route('/ventas/finalizar', methods=['POST'])
+@login_required
+def finalizar_venta():
+    """Finaliza la venta con datos del cliente y actualiza el inventario"""
+    if current_user.role not in ['admin', 'vendedor']:
+        flash('Acceso denegado', 'danger')
+        return redirect(url_for('dashboard'))
+
+    items = session.get('venta_items', [])
+
+    if not items:
+        flash('⚠️ No hay items para procesar. Inicia una nueva venta.', 'warning')
+        return redirect(url_for('panel_ventas'))
+
+    nombre_cliente = request.form.get('nombre_cliente', '').strip()
+    telefono_cliente = request.form.get('telefono_cliente', '').strip()
+
+    if not nombre_cliente:
+        flash('⚠️ El nombre del cliente es requerido.', 'warning')
+        total = sum(item['precio'] * item['cantidad'] for item in items)
+        return render_template('ventas/datos_cliente.html', items=items, total=total,
+                               nombre_cliente=nombre_cliente, telefono_cliente=telefono_cliente)
+
+    try:
+        for item in items:
+            libro = Libro.query.get(item['id'])
+            if libro:
+                libro.existencias -= item['cantidad']
+                libro.editado_por_id = current_user.id
+
+        db.session.commit()
+
+        session.pop('venta_items', None)
+        session.modified = True
+
+        flash(f'✅ Venta completada exitosamente para {nombre_cliente}.', 'success')
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Error al procesar la venta: {str(e)}', 'danger')
+
+    return redirect(url_for('panel_ventas'))
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
